@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon Says Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --panel: #12121a;
+            --border: #1e1e2e;
+            --text: #e0e0f0;
+            --muted: #5a5a7a;
+            --accent: #ffffff;
+
+            --blue:   #1a6aff;
+            --blue-lit: #5599ff;
+            --blue-glow: rgba(26, 106, 255, 0.7);
+
+            --red:    #e01030;
+            --red-lit: #ff4466;
+            --red-glow: rgba(224, 16, 48, 0.7);
+
+            --yellow: #d4a000;
+            --yellow-lit: #ffe033;
+            --yellow-glow: rgba(212, 160, 0, 0.7);
+
+            --green:  #00a040;
+            --green-lit: #22ee66;
+            --green-glow: rgba(0, 160, 64, 0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            padding: 2rem;
+            background-image:
+                radial-gradient(ellipse 60% 40% at 50% 0%, rgba(26,106,255,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 80% 80%, rgba(224,16,48,0.05) 0%, transparent 60%);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--accent);
+            text-shadow: 0 0 30px rgba(255,255,255,0.2);
+        }
+
+        .simon-board {
+            position: relative;
+            width: min(340px, 90vw);
+            height: min(340px, 90vw);
+        }
+
+        .simon-board::before {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            background: conic-gradient(
+                var(--blue)   0deg 90deg,
+                var(--red)   90deg 180deg,
+                var(--yellow) 180deg 270deg,
+                var(--green) 270deg 360deg
+            );
+            opacity: 0.25;
+            filter: blur(6px);
+        }
+
+        .simon-board::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: var(--panel);
+            border: 2px solid var(--border);
+        }
+
+        .center-disc {
+            position: absolute;
+            inset: 0;
+            margin: auto;
+            width: 28%;
+            height: 28%;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .center-dot {
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background: var(--muted);
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+
+        .simon-btn {
+            position: absolute;
+            width: 47%;
+            height: 47%;
+            cursor: default;
+            border: none;
+            transition: filter 0.12s, box-shadow 0.12s;
+            z-index: 5;
+            outline: none;
+        }
+
+        .simon-btn.blue {
+            top: 2%; left: 2%;
+            background: var(--blue);
+            clip-path: polygon(0 0, 100% 0, 100% 100%, 58% 100%, 0 58%);
+            border-radius: 100% 8px 0 0;
+            filter: brightness(0.45);
+        }
+        .simon-btn.red {
+            top: 2%; right: 2%;
+            background: var(--red);
+            clip-path: polygon(0 0, 100% 0, 100% 58%, 42% 100%, 0 100%);
+            border-radius: 8px 100% 0 0;
+            filter: brightness(0.45);
+        }
+        .simon-btn.yellow {
+            bottom: 2%; left: 2%;
+            background: var(--yellow);
+            clip-path: polygon(0 42%, 58% 0, 100% 0, 100% 100%, 0 100%);
+            border-radius: 0 0 0 100%;
+            filter: brightness(0.45);
+        }
+        .simon-btn.green {
+            bottom: 2%; right: 2%;
+            background: var(--green);
+            clip-path: polygon(42% 0, 100% 42%, 100% 100%, 0 100%, 0 0);
+            border-radius: 0 0 100% 0;
+            filter: brightness(0.45);
+        }
+
+        .simon-btn.blue.lit {
+            filter: brightness(1.2);
+            box-shadow: 0 0 50px 14px var(--blue-glow), inset 0 0 30px rgba(255,255,255,0.18);
+        }
+        .simon-btn.red.lit {
+            filter: brightness(1.2);
+            box-shadow: 0 0 50px 14px var(--red-glow), inset 0 0 30px rgba(255,255,255,0.18);
+        }
+        .simon-btn.yellow.lit {
+            filter: brightness(1.2);
+            box-shadow: 0 0 50px 14px var(--yellow-glow), inset 0 0 30px rgba(255,255,255,0.18);
+        }
+        .simon-btn.green.lit {
+            filter: brightness(1.2);
+            box-shadow: 0 0 50px 14px var(--green-glow), inset 0 0 30px rgba(255,255,255,0.18);
+        }
+
+        .status-bar {
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            color: var(--muted);
+            min-height: 1.2em;
+            text-align: center;
+            transition: color 0.3s;
+        }
+        .status-bar.active { color: var(--blue-lit); }
+        .status-bar.success { color: var(--green-lit); }
+        .status-bar.error { color: var(--red-lit); }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ctrl-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            padding: 0.65rem 1.4rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--text);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .ctrl-btn:hover {
+            background: #1a1a28;
+            border-color: var(--muted);
+            box-shadow: 0 0 12px rgba(255,255,255,0.06);
+        }
+
+        .ctrl-btn#startBtn {
+            border-color: rgba(26,106,255,0.5);
+            color: var(--blue-lit);
+        }
+        .ctrl-btn#startBtn:hover {
+            background: rgba(26,106,255,0.12);
+            border-color: var(--blue-lit);
+            box-shadow: 0 0 16px var(--blue-glow);
+        }
+        .ctrl-btn#startBtn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .diff-label {
+            font-size: 0.65rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-right: 0.25rem;
+        }
+
+        .diff-btn {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.45rem 0.85rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .diff-btn:hover { border-color: var(--muted); color: var(--text); }
+
+        .diff-btn[data-diff="1"].active {
+            border-color: var(--green);
+            color: var(--green-lit);
+            background: rgba(0,160,64,0.1);
+        }
+        .diff-btn[data-diff="2"].active {
+            border-color: var(--yellow);
+            color: var(--yellow-lit);
+            background: rgba(212,160,0,0.1);
+        }
+        .diff-btn[data-diff="3"].active {
+            border-color: var(--red);
+            color: var(--red-lit);
+            background: rgba(224,16,48,0.1);
+        }
+
+        .leaderboard-section {
+            width: min(400px, 90vw);
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+        }
+
+        #leaderboard {
+            list-style: none;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        #leaderboard li {
+            padding: 0.55rem 1rem;
+            font-size: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        #leaderboard li:last-child { border-bottom: none; }
+        #leaderboard li:nth-child(odd) { background: rgba(255,255,255,0.02); }
+        #leaderboard li.empty { color: var(--muted); text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Simon Says</h1>
+
+    <div class="simon-board">
+        <button class="simon-btn blue"   id="btn-blue"   aria-label="Blue"   onclick="sendPress(0)"></button>
+        <button class="simon-btn red"    id="btn-red"    aria-label="Red"    onclick="sendPress(1)"></button>
+        <button class="simon-btn yellow" id="btn-yellow" aria-label="Yellow" onclick="sendPress(2)"></button>
+        <button class="simon-btn green"  id="btn-green"  aria-label="Green"  onclick="sendPress(3)"></button>
+        <div class="center-disc">
+            <div class="center-dot" id="center-dot"></div>
+        </div>
+    </div>
+
+    <div class="status-bar" id="statusBar">— ready —</div>
+
+    <div class="controls">
+        <div class="difficulty-selector">
+            <span class="diff-label">Difficulty</span>
+            <button class="diff-btn active" data-diff="1">Easy</button>
+            <button class="diff-btn" data-diff="2">Medium</button>
+            <button class="diff-btn" data-diff="3">Hard</button>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="ctrl-btn" id="startBtn">Start Game</button>
+        <button class="ctrl-btn" id="leaderboardBtn">Leaderboard</button>
+    </div>
+
+    <div class="leaderboard-section">
+        <h2>Leaderboard</h2>
+        <ul id="leaderboard"></ul>
+    </div>
+
+    <script>
+        let selectedDifficulty = 1;
+        let pollInterval = null;
+        let gameRunning = false;
+        let gameConfirmedRunning = false;
+
+        // guard flag to ignore presses while server isn't waiting for input
+        let pressPending = false;
+
+        const colourMap = ['blue', 'red', 'yellow', 'green'];
+
+        const btns = {
+            blue:   document.getElementById('btn-blue'),
+            red:    document.getElementById('btn-red'),
+            yellow: document.getElementById('btn-yellow'),
+            green:  document.getElementById('btn-green'),
+        };
+        const statusBar = document.getElementById('statusBar');
+        const startBtn  = document.getElementById('startBtn');
+
+        document.querySelectorAll('.diff-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                if (gameRunning) return;
+                document.querySelectorAll('.diff-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                selectedDifficulty = parseInt(btn.dataset.diff);
+                loadLeaderboard();
+            });
+        });
+
+        function clearAllLit() {
+            Object.values(btns).forEach(function(b) { b.classList.remove('lit'); });
+        }
+
+        function setStatus(msg, type) {
+            statusBar.className = 'status-bar' + (type ? ' ' + type : '');
+            statusBar.textContent = msg;
+        }
+
+        var lastLedState = [false, false, false, false];
+
+        function startPolling() {
+            if (pollInterval) return;
+            pollInterval = setInterval(function() {
+                fetch('/led_state')
+                    .then(function(res) { return res.json(); })
+                    .then(function(data) {
+                        data.leds.forEach(function(on, i) {
+                            var colour = colourMap[i];
+                            if (on && !lastLedState[i]) {
+                                btns[colour].classList.add('lit');
+                            } else if (!on && lastLedState[i]) {
+                                btns[colour].classList.remove('lit');
+                            }
+                        });
+                        lastLedState = data.leds.slice();
+
+                        if (data.message) {
+                            var isActive = data.running;
+                            var isError  = data.message === 'game over' || data.message === 'wrong button!';
+                            setStatus('— ' + data.message + ' —', isError ? 'error' : isActive ? 'active' : '');
+                        }
+
+                        if (data.running) {
+                            gameConfirmedRunning = true;
+                        }
+
+                        // same key fix for the game-over detection block
+                        if (!data.running && gameRunning && gameConfirmedRunning) {
+                            gameConfirmedRunning = false;
+                            gameRunning = false;
+                            pressPending = false;
+                            stopPolling();
+                            clearAllLit();
+                            setStatus('— game over —', 'error');
+
+                            var name = prompt('Game over! Enter your name:') || 'Anonymous';
+                            fetch('/submit_score', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                body: 'name=' + encodeURIComponent(name) + '&difficulty=' + selectedDifficulty
+                            }).then(function() {
+                                startBtn.disabled = false;
+                                document.querySelectorAll('.diff-btn').forEach(function(b) {
+                                    b.style.pointerEvents = '';
+                                });
+                                loadLeaderboard();
+                            });
+                        }
+                    })
+                    .catch(function() {});
+            }, 80);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        startBtn.addEventListener('click', function() {
+            startBtn.disabled = true;
+            document.querySelectorAll('.diff-btn').forEach(function(b) {
+                b.style.pointerEvents = 'none';
+            });
+            gameRunning = true;
+            gameConfirmedRunning = false;
+            clearAllLit();
+            setStatus('— starting —', 'active');
+
+            fetch('/start_game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'difficulty=' + selectedDifficulty
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                setStatus('— ' + data.status.toLowerCase() + ' —', 'active');
+                startPolling();
+            })
+            .catch(function() {
+                setStatus('— connection error —', 'error');
+                startBtn.disabled = false;
+                gameRunning = false;
+                gameConfirmedRunning = false;
+                document.querySelectorAll('.diff-btn').forEach(function(b) {
+                    b.style.pointerEvents = '';
+                });
+            });
+        });
+
+        function loadLeaderboard() {
+            fetch('/leaderboard?difficulty=' + selectedDifficulty)
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    var ul = document.getElementById('leaderboard');
+                    ul.innerHTML = '';
+                    if (!data.length) {
+                        ul.innerHTML = '<li class="empty">No scores yet</li>';
+                        return;
+                    }
+                    data.forEach(function(entry, i) {
+                        var li = document.createElement('li');
+                        li.textContent = (i + 1) + '. ' + entry[0] + ' — Score: ' + entry[1] + ', Level: ' + entry[2];
+                        ul.appendChild(li);
+                    });
+                })
+                .catch(function() {});
+        }
+
+        document.getElementById('leaderboardBtn').addEventListener('click', loadLeaderboard);
+
+        loadLeaderboard();
+
+        // debounce sendPress so double-clicks can't fire two inputs
+        function sendPress(value) {
+            fetch('/press', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'value=' + value
+            }).catch(function() {});
+        }
+    </script>
+</body>
+</html>
